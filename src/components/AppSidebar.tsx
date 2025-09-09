@@ -1,13 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
-  Sprout,
   Package,
   BarChart3,
   DollarSign,
   Users,
   FileText,
 } from "lucide-react";
+import { ShrimpIcon } from "@/components/icons/ShrimpIcon";
 
 import {
   Sidebar,
@@ -23,7 +23,7 @@ import {
 
 const items = [
   { title: "Fazenda", url: "/fazenda", icon: Home },
-  { title: "Cultivo", url: "/cultivo", icon: Sprout },
+  { title: "Cultivo", url: "/cultivo", icon: ShrimpIcon },
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Coleta de Dados", url: "/coleta-dados", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },

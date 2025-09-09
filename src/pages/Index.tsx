@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "react-router-dom";
-import { Sprout, BarChart3, Package, DollarSign } from "lucide-react";
+import { BarChart3, Package, DollarSign } from "lucide-react";
+import { ShrimpIcon } from "@/components/icons/ShrimpIcon";
 
 const Index = () => {
   return (
@@ -11,19 +12,19 @@ const Index = () => {
           Bem-vindo ao Meu Viveiro
         </h1>
         <p className="text-lg text-muted-foreground">
-          Sistema completo de gestão agrícola para sua propriedade
+          Sistema completo de gestão para carcinicultura
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="shadow-card hover:shadow-elegant transition-shadow">
           <CardHeader className="text-center">
-            <Sprout className="h-12 w-12 mx-auto text-secondary mb-2" />
+            <ShrimpIcon className="h-12 w-12 mx-auto text-secondary mb-2" size={48} />
             <CardTitle className="text-lg">Cultivo</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-sm text-muted-foreground mb-4">
-              Gerencie plantações e cronogramas
+              Gerencie viveiros e ciclos de criação
             </p>
             <Button asChild variant="secondary" size="sm">
               <NavLink to="/cultivo">Acessar</NavLink>
@@ -85,7 +86,7 @@ const Index = () => {
           <p className="text-muted-foreground">
             Bem-vindo ao sistema de gestão Meu Viveiro! Use o menu lateral para navegar 
             entre as diferentes seções do sistema. Cada módulo foi desenvolvido para 
-            facilitar o gerenciamento completo da sua propriedade agrícola.
+            facilitar o gerenciamento completo da sua fazenda de camarão.
           </p>
         </CardContent>
       </Card>
