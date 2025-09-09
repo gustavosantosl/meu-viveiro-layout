@@ -4,8 +4,8 @@ const ColetaDados = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Coleta de Dados</h1>
-        <p className="text-muted-foreground">Monitoramento e análise de dados</p>
+        <h1 className="text-2xl font-poppins font-bold text-foreground">Coleta de Dados</h1>
+        <p className="text-muted-foreground font-inter">Monitoramento e análise de dados aquícolas</p>
       </div>
 
       <Card className="shadow-card">

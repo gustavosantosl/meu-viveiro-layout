@@ -4,7 +4,7 @@ import { Logo } from "@/components/icons/Logo";
 
 const Header = () => {
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-6 shadow-soft">
+    <header className="flex h-16 items-center justify-between border-b bg-card px-6 shadow-soft">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <Logo variant="light" size="md" />

@@ -4,8 +4,8 @@ const Cultivo = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Cultivo</h1>
-        <p className="text-muted-foreground">Gerencie viveiros e ciclos de carcinicultura</p>
+        <h1 className="text-2xl font-poppins font-bold text-foreground">Cultivo</h1>
+        <p className="text-muted-foreground font-inter">Gerencie viveiros e ciclos de carcinicultura</p>
       </div>
 
       <Card className="shadow-card">

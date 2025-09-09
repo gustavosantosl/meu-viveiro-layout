@@ -4,8 +4,8 @@ const Funcionarios = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Funcionários</h1>
-        <p className="text-muted-foreground">Gestão de recursos humanos</p>
+        <h1 className="text-2xl font-poppins font-bold text-foreground">Funcionários</h1>
+        <p className="text-muted-foreground font-inter">Gestão de recursos humanos</p>
       </div>
 
       <Card className="shadow-card">

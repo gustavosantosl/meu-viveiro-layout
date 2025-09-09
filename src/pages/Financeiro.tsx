@@ -4,8 +4,8 @@ const Financeiro = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Financeiro</h1>
-        <p className="text-muted-foreground">Gestão financeira da fazenda</p>
+        <h1 className="text-2xl font-poppins font-bold text-foreground">Financeiro</h1>
+        <p className="text-muted-foreground font-inter">Gestão financeira da carcinicultura</p>
       </div>
 
       <Card className="shadow-card">

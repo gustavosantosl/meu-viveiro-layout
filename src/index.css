@@ -2,95 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Meu Viveiro Design System - Agricultural Management Theme */
+/* Meu Viveiro Design System - Aquaculture Management Theme 
+   Professional aqua-inspired design for shrimp farming */
 
 @layer base {
   :root {
-    /* Base colors */
-    --background: 0 0% 100%;
-    --foreground: 213 27% 17%;
+    /* Base colors - Aqua theme */
+    --background: 0 0% 98%;
+    --foreground: 217 31% 17%;
 
     /* Card system */
     --card: 0 0% 100%;
-    --card-foreground: 213 27% 17%;
+    --card-foreground: 217 31% 17%;
 
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 213 27% 17%;
+    --popover-foreground: 217 31% 17%;
 
-    /* Primary - Blue theme for farm management */
-    --primary: 217 91% 60%;
+    /* Primary - Teal/Aqua for water theme */
+    --primary: 188 94% 29%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 217 91% 55%;
+    --primary-hover: 188 94% 24%;
 
-    /* Secondary - Green theme for agriculture */
-    --secondary: 142 76% 36%;
+    /* Secondary - Shrimp Orange */
+    --secondary: 25 95% 53%;
     --secondary-foreground: 0 0% 98%;
-    --secondary-hover: 142 76% 31%;
+    --secondary-hover: 25 95% 48%;
+
+    /* Accent - Growth Green */
+    --accent: 142 84% 44%;
+    --accent-foreground: 0 0% 98%;
 
     /* Muted tones */
-    --muted: 210 40% 96%;
-    --muted-foreground: 213 27% 45%;
-
-    /* Accent - Light green for highlights */
-    --accent: 142 76% 94%;
-    --accent-foreground: 142 76% 36%;
+    --muted: 210 40% 98%;
+    --muted-foreground: 217 20% 51%;
 
     /* Status colors */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --success: 142 76% 36%;
+    --success: 142 84% 44%;
     --success-foreground: 0 0% 98%;
-    --warning: 43 96% 56%;
+    --warning: 25 95% 53%;
     --warning-foreground: 0 0% 98%;
 
     /* Interface elements */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --ring: 188 94% 29%;
 
     /* Layout */
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Sidebar - Dark theme for navigation */
-    --sidebar-background: 213 27% 17%;
+    /* Sidebar - Dark aquatic theme */
+    --sidebar-background: 217 33% 10%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 188 94% 29%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 213 27% 22%;
+    --sidebar-accent: 217 33% 14%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 213 27% 22%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-border: 217 33% 14%;
+    --sidebar-ring: 188 94% 29%;
     
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 31%));
-    --gradient-accent: linear-gradient(135deg, hsl(142 76% 94%), hsl(142 76% 89%));
+    /* Custom gradients - Aquatic theme */
+    --gradient-primary: linear-gradient(135deg, hsl(188 94% 29%), hsl(188 94% 35%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 95% 53%), hsl(25 95% 58%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 84% 44%), hsl(142 84% 50%));
+    --gradient-aqua: linear-gradient(135deg, hsl(188 94% 29%), hsl(142 84% 44%));
     
-    /* Shadows */
-    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-elegant: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    /* Shadows - Aquatic soft shadows */
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+    --shadow-elegant: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+    --shadow-aqua: 0 4px 20px rgb(14 116 144 / 0.15);
   }
 
   .dark {
-    --background: 213 27% 8%;
+    --background: 217 33% 6%;
     --foreground: 0 0% 98%;
-    --card: 213 27% 12%;
+    --card: 217 33% 8%;
     --card-foreground: 0 0% 98%;
-    --popover: 213 27% 12%;
+    --popover: 217 33% 8%;
     --popover-foreground: 0 0% 98%;
-    --primary: 217 91% 60%;
+    --primary: 188 94% 35%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 142 76% 36%;
+    --secondary: 25 95% 53%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 213 27% 15%;
-    --muted-foreground: 213 27% 65%;
-    --accent: 213 27% 15%;
-    --accent-foreground: 142 76% 36%;
-    --border: 213 27% 15%;
-    --input: 213 27% 15%;
-    --ring: 217 91% 60%;
+    --muted: 217 33% 12%;
+    --muted-foreground: 217 20% 65%;
+    --accent: 217 33% 12%;
+    --accent-foreground: 142 84% 44%;
+    --border: 217 33% 12%;
+    --input: 217 33% 12%;
+    --ring: 188 94% 35%;
   }
 }
 
@@ -100,6 +103,10 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-poppins;
   }
 }

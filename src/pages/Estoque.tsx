@@ -4,8 +4,8 @@ const Estoque = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Estoque</h1>
-        <p className="text-muted-foreground">Controle de insumos e produtos</p>
+        <h1 className="text-2xl font-poppins font-bold text-foreground">Estoque</h1>
+        <p className="text-muted-foreground font-inter">Controle de insumos e produtos</p>
       </div>
 
       <Card className="shadow-card">
