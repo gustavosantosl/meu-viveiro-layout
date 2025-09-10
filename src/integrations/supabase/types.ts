@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      feedings: {
+        Row: {
+          fed_at: string | null
+          feed_type: string | null
+          id: string
+          pond_id: string | null
+          quantity: number | null
+          user_id: string | null
+        }
+        Insert: {
+          fed_at?: string | null
+          feed_type?: string | null
+          id?: string
+          pond_id?: string | null
+          quantity?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          fed_at?: string | null
+          feed_type?: string | null
+          id?: string
+          pond_id?: string | null
+          quantity?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedings_pond_id_fkey"
+            columns: ["pond_id"]
+            isOneToOne: false
+            referencedRelation: "ponds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ponds: {
+        Row: {
+          created_at: string | null
+          farm_id: string | null
+          id: string
+          name: string
+          size: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          farm_id?: string | null
+          id?: string
+          name: string
+          size?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          farm_id?: string | null
+          id?: string
+          name?: string
+          size?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponds_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "shrimp_farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ponds_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      shrimp_farms: {
+        Row: {
+          created_at: string | null
+          id: string
+          location: string | null
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shrimp_farms_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

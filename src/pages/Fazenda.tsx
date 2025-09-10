@@ -1,56 +1,151 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, MapPin, Edit, Trash2 } from "lucide-react";
+import { useFarms, useCreateFarm, useUpdateFarm, useDeleteFarm, type ShrimpFarm } from "@/hooks/useFarms";
 
 const Fazenda = () => {
+  const { data: farms, isLoading } = useFarms();
+  const createFarm = useCreateFarm();
+  const updateFarm = useUpdateFarm();
+  const deleteFarm = useDeleteFarm();
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingFarm, setEditingFarm] = useState<ShrimpFarm | null>(null);
+  const [formData, setFormData] = useState({ name: '', location: '' });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingFarm) {
+      await updateFarm.mutateAsync({ ...editingFarm, ...formData });
+    } else {
+      await createFarm.mutateAsync(formData);
+    }
+    
+    setIsDialogOpen(false);
+    setEditingFarm(null);
+    setFormData({ name: '', location: '' });
+  };
+
+  const handleEdit = (farm: ShrimpFarm) => {
+    setEditingFarm(farm);
+    setFormData({ name: farm.name, location: farm.location || '' });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir esta fazenda?')) {
+      await deleteFarm.mutateAsync(id);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center">Carregando...</div>;
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-poppins font-bold text-foreground">Fazenda</h1>
-        <p className="text-muted-foreground font-inter">Gerencie as informações da sua fazenda de camarão</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-poppins font-bold text-foreground">Fazendas</h1>
+          <p className="text-muted-foreground font-inter">Gerencie suas fazendas de camarão</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary hover:bg-primary/90 gap-2">
+              <Plus size={16} />
+              Nova Fazenda
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingFarm ? 'Editar Fazenda' : 'Nova Fazenda'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nome da Fazenda</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="location">Localização</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                />
+              </div>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+                {editingFarm ? 'Atualizar' : 'Criar'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Área Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">125 hectares</div>
-            <p className="text-sm text-muted-foreground">Área cultivável disponível</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Setores Ativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-secondary">8 setores</div>
-            <p className="text-sm text-muted-foreground">Setores em produção</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">Operacional</div>
-            <p className="text-sm text-muted-foreground">Todos os sistemas funcionando</p>
-          </CardContent>
-        </Card>
+        {farms?.map((farm) => (
+          <Card key={farm.id} className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex justify-between items-start">
+                <span>{farm.name}</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(farm)}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(farm.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {farm.location && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin size={16} />
+                  <span>{farm.location}</span>
+                </div>
+              )}
+              <div className="text-sm text-muted-foreground mt-2">
+                Criada em {new Date(farm.created_at).toLocaleDateString('pt-BR')}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Página Fazenda</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Esta é a página de gestão da fazenda. Aqui você poderá gerenciar informações sobre 
-            a propriedade, setores de plantio, infraestrutura e muito mais.
-          </p>
-        </CardContent>
-      </Card>
+      {farms?.length === 0 && (
+        <Card className="shadow-card text-center py-12">
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Nenhuma fazenda cadastrada ainda.
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)} className="bg-primary hover:bg-primary/90">
+              Criar primeira fazenda
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
