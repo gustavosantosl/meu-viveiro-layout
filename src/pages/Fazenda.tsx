@@ -29,10 +29,31 @@ const Fazenda = () => {
     }
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log("Usuário sendo enviado para o insert:", user);
 
     if (userError || !user) {
       alert("Você precisa estar logado para criar uma fazenda.");
       return;
+    }
+
+    // Garante que o perfil do usuário existe para não violar a FK (profiles -> shrimp_farms.user_id)
+    const { data: existingProfile, error: profileSelectError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileSelectError) {
+      console.warn("Erro ao verificar perfil do usuário:", profileSelectError);
+    }
+
+    if (!existingProfile) {
+      const { error: profileInsertError } = await supabase
+        .from('profiles')
+        .insert([{ id: user.id, name: (user.user_metadata as any)?.name ?? null, email: user.email ?? null }]);
+      if (profileInsertError) {
+        console.error("Erro ao criar perfil do usuário:", profileInsertError);
+      }
     }
 
     const { error } = await supabase
