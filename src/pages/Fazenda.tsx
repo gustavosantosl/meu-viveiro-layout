@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, MapPin, Edit, Trash2 } from "lucide-react";
-import { useFarms, useCreateFarm, useUpdateFarm, useDeleteFarm, type ShrimpFarm } from "@/hooks/useFarms";
+import { useFarms, useUpdateFarm, useDeleteFarm, type ShrimpFarm } from "@/hooks/useFarms";
+import { supabase } from "@/integrations/supabase/client";
 
 const Fazenda = () => {
   const { data: farms, isLoading } = useFarms();
-  const createFarm = useCreateFarm();
   const updateFarm = useUpdateFarm();
   const deleteFarm = useDeleteFarm();
 
@@ -19,16 +19,37 @@ const Fazenda = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingFarm) {
       await updateFarm.mutateAsync({ ...editingFarm, ...formData });
-    } else {
-      await createFarm.mutateAsync(formData);
+      setIsDialogOpen(false);
+      setEditingFarm(null);
+      setFormData({ name: '', location: '' });
+      return;
     }
-    
-    setIsDialogOpen(false);
-    setEditingFarm(null);
-    setFormData({ name: '', location: '' });
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      alert("Você precisa estar logado para criar uma fazenda.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("shrimp_farms")
+      .insert([{ name: formData.name, location: formData.location, user_id: user.id }]);
+
+    if (error) {
+      alert("Erro ao criar fazenda: " + error.message);
+      console.error(error);
+    } else {
+      alert("Fazenda criada com sucesso!");
+      setFormData({ name: '', location: '' });
+      setIsDialogOpen(false);
+      setEditingFarm(null);
+      // Refresh the farms list
+      window.location.reload();
+    }
   };
 
   const handleEdit = (farm: ShrimpFarm) => {
