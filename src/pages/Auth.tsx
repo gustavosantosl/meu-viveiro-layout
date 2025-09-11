@@ -61,14 +61,14 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-card">
-        <CardHeader className="text-center space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-elegant border-0">
+        <CardHeader className="text-center space-y-6 pb-8">
           <div className="flex justify-center">
             <Logo size="lg" />
           </div>
-          <CardTitle className="text-2xl font-poppins">
-            {isLogin ? 'Entrar' : 'Criar Conta'}
+          <CardTitle className="text-2xl font-poppins text-foreground">
+            {isLogin ? 'Entrar no Sistema' : 'Criar Nova Conta'}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -111,19 +111,19 @@ const Auth = () => {
             </div>
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary/90" 
+              className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium shadow-aqua" 
               disabled={loading}
             >
-              {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Cadastrar')}
+              {loading ? 'Processando...' : (isLogin ? 'Entrar no Sistema' : 'Criar Conta')}
             </Button>
           </form>
-          <div className="mt-6 text-center">
+          <div className="mt-8 text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:text-primary/80 font-medium"
+              className="text-primary hover:text-primary-hover font-medium transition-colors"
             >
-              {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
+              {isLogin ? 'Não tem conta? Cadastre-se aqui' : 'Já tem conta? Entre aqui'}
             </button>
           </div>
         </CardContent>
