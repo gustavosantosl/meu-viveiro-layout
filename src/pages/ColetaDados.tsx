@@ -1,221 +1,405 @@
-import { useState } from 'react';
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Fish } from "lucide-react";
-import { useFeedings, useCreateFeeding, useUpdateFeeding, useDeleteFeeding, type Feeding } from "@/hooks/useFeedings";
-import { usePonds } from "@/hooks/usePonds";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Edit2, Trash2, CalendarIcon, Fish } from "lucide-react";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+interface FeedingRecord {
+  id: string;
+  pond_name: string;
+  date: string;
+  feed_quantity: number;
+  water_quality?: string;
+  mortality?: number;
+  created_at?: string;
+  updated_at?: string;
+  fed_at?: string;
+  feed_type?: string;
+  pond_id?: string;
+  quantity?: number;
+  user_id?: string;
+}
 
 const ColetaDados = () => {
-  const { data: feedings, isLoading: feedingsLoading } = useFeedings();
-  const { data: ponds } = usePonds();
-  const createFeeding = useCreateFeeding();
-  const updateFeeding = useUpdateFeeding();
-  const deleteFeeding = useDeleteFeeding();
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
-  const [formData, setFormData] = useState({ 
-    pond_id: '', 
-    feed_type: '', 
-    quantity: '', 
-    fed_at: new Date().toISOString().slice(0, 16) 
+  const [records, setRecords] = useState<FeedingRecord[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<FeedingRecord | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [formData, setFormData] = useState({
+    pond_name: "",
+    feed_quantity: "",
+    water_quality: "",
+    mortality: ""
   });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    const { data, error } = await supabase
+      .from('feedings')
+      .select('*')
+      .not('pond_name', 'is', null)
+      .not('date', 'is', null)
+      .not('feed_quantity', 'is', null)
+      .order('date', { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar registros: " + error.message,
+        variant: "destructive"
+      });
+    } else {
+      setRecords(data || []);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const data = {
-      pond_id: formData.pond_id || null,
-      feed_type: formData.feed_type || null,
-      quantity: formData.quantity ? parseFloat(formData.quantity) : null,
-      fed_at: formData.fed_at,
-    };
 
-    if (editingFeeding) {
-      await updateFeeding.mutateAsync({ ...editingFeeding, ...data });
-    } else {
-      await createFeeding.mutateAsync(data);
+    if (!formData.pond_name || !selectedDate || !formData.feed_quantity) {
+      toast({
+        title: "Erro",
+        description: "Campos obrigatórios: Nome do Viveiro, Data e Quantidade de Ração",
+        variant: "destructive"
+      });
+      return;
     }
-    
-    setIsDialogOpen(false);
-    setEditingFeeding(null);
-    setFormData({ pond_id: '', feed_type: '', quantity: '', fed_at: new Date().toISOString().slice(0, 16) });
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para criar registros",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Ensure user profile exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!existingProfile) {
+      const { error: profileInsertError } = await supabase
+        .from('profiles')
+        .insert([{ 
+          id: user.id, 
+          name: (user.user_metadata as any)?.name ?? null, 
+          email: user.email ?? null 
+        }]);
+      if (profileInsertError) {
+        console.error("Erro ao criar perfil do usuário:", profileInsertError);
+      }
+    }
+
+    try {
+      const recordData = {
+        pond_name: formData.pond_name,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        feed_quantity: parseFloat(formData.feed_quantity),
+        water_quality: formData.water_quality || null,
+        mortality: formData.mortality ? parseInt(formData.mortality) : null,
+        user_id: user.id
+      };
+
+      if (isEditMode && editingRecord) {
+        const { error } = await supabase
+          .from('feedings')
+          .update(recordData)
+          .eq('id', editingRecord.id);
+
+        if (error) {
+          toast({
+            title: "Erro",
+            description: "Erro ao atualizar registro: " + error.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Sucesso",
+            description: "Registro atualizado com sucesso!"
+          });
+          fetchRecords();
+          resetForm();
+        }
+      } else {
+        const { error } = await supabase
+          .from('feedings')
+          .insert([recordData]);
+
+        if (error) {
+          toast({
+            title: "Erro",
+            description: "Erro ao criar registro: " + error.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Sucesso",
+            description: "Registro criado com sucesso!"
+          });
+          fetchRecords();
+          resetForm();
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao salvar registro",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEdit = (feeding: Feeding) => {
-    setEditingFeeding(feeding);
-    setFormData({ 
-      pond_id: feeding.pond_id || '', 
-      feed_type: feeding.feed_type || '', 
-      quantity: feeding.quantity?.toString() || '',
-      fed_at: new Date(feeding.fed_at).toISOString().slice(0, 16)
+  const handleEdit = (record: FeedingRecord) => {
+    setIsEditMode(true);
+    setEditingRecord(record);
+    setFormData({
+      pond_name: record.pond_name,
+      feed_quantity: record.feed_quantity.toString(),
+      water_quality: record.water_quality || "",
+      mortality: record.mortality?.toString() || ""
     });
-    setIsDialogOpen(true);
+    setSelectedDate(new Date(record.date));
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este registro de alimentação?')) {
-      await deleteFeeding.mutateAsync(id);
+    if (!confirm("Deseja realmente excluir este registro?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('feedings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir registro: " + error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Registro excluído com sucesso!"
+      });
+      fetchRecords();
     }
   };
 
-  if (feedingsLoading) {
-    return <div className="text-center">Carregando...</div>;
-  }
+  const resetForm = () => {
+    setFormData({ pond_name: "", feed_quantity: "", water_quality: "", mortality: "" });
+    setSelectedDate(undefined);
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingRecord(null);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-poppins font-bold text-foreground">Coleta de Dados</h1>
-          <p className="text-muted-foreground font-inter">Registre alimentações e monitore os dados</p>
+          <p className="text-muted-foreground font-inter">Registro de alimentação e monitoramento</p>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 gap-2">
-              <Plus size={16} />
-              Nova Alimentação
+            <Button onClick={() => setIsEditMode(false)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Novo Registro
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
-                {editingFeeding ? 'Editar Alimentação' : 'Nova Alimentação'}
+                {isEditMode ? "Editar Registro" : "Novo Registro"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="pond">Tanque</Label>
-                <Select 
-                  value={formData.pond_id} 
-                  onValueChange={(value) => setFormData({ ...formData, pond_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um tanque" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ponds?.map((pond) => (
-                      <SelectItem key={pond.id} value={pond.id}>
-                        {pond.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="feed_type">Tipo de Ração</Label>
-                <Select 
-                  value={formData.feed_type} 
-                  onValueChange={(value) => setFormData({ ...formData, feed_type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo de ração" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inicial">Inicial</SelectItem>
-                    <SelectItem value="crescimento">Crescimento</SelectItem>
-                    <SelectItem value="engorda">Engorda</SelectItem>
-                    <SelectItem value="finalização">Finalização</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="quantity">Quantidade (kg)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="pond_name">Nome do Viveiro *</Label>
                 <Input
-                  id="quantity"
-                  type="number"
-                  step="0.1"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="fed_at">Data e Hora</Label>
-                <Input
-                  id="fed_at"
-                  type="datetime-local"
-                  value={formData.fed_at}
-                  onChange={(e) => setFormData({ ...formData, fed_at: e.target.value })}
+                  id="pond_name"
+                  value={formData.pond_name}
+                  onChange={(e) => setFormData({ ...formData, pond_name: e.target.value })}
+                  placeholder="Digite o nome do viveiro"
                   required
                 />
               </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-                {editingFeeding ? 'Atualizar' : 'Registrar'}
-              </Button>
+
+              <div className="space-y-2">
+                <Label>Data *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(selectedDate, "dd/MM/yyyy", { locale: pt })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={pt}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="feed_quantity">Quantidade de Ração (kg) *</Label>
+                <Input
+                  id="feed_quantity"
+                  type="number"
+                  value={formData.feed_quantity}
+                  onChange={(e) => setFormData({ ...formData, feed_quantity: e.target.value })}
+                  placeholder="0.0"
+                  min="0"
+                  step="0.1"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="water_quality">Qualidade da Água</Label>
+                <Textarea
+                  id="water_quality"
+                  value={formData.water_quality}
+                  onChange={(e) => setFormData({ ...formData, water_quality: e.target.value })}
+                  placeholder="Observações sobre a qualidade da água (opcional)"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mortality">Mortalidade</Label>
+                <Input
+                  id="mortality"
+                  type="number"
+                  value={formData.mortality}
+                  onChange={(e) => setFormData({ ...formData, mortality: e.target.value })}
+                  placeholder="Número de mortes (opcional)"
+                  min="0"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={resetForm} className="flex-1">
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1">
+                  {isEditMode ? "Atualizar" : "Salvar"}
+                </Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {feedings?.map((feeding) => {
-          const pond = ponds?.find(p => p.id === feeding.pond_id);
-          return (
-            <Card key={feeding.id} className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <Fish className="text-primary" size={20} />
-                    <span>Alimentação - {pond?.name || 'Tanque não encontrado'}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(feeding)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(feeding.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-sm text-muted-foreground">Tipo de Ração:</span>
-                    <div className="font-medium">{feeding.feed_type || 'Não informado'}</div>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Quantidade:</span>
-                    <div className="font-medium">{feeding.quantity ? `${feeding.quantity} kg` : 'Não informado'}</div>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Data/Hora:</span>
-                    <div className="font-medium">
-                      {new Date(feeding.fed_at).toLocaleString('pt-BR')}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {feedings?.length === 0 && (
-        <Card className="shadow-card text-center py-12">
-          <CardContent>
+      {records.length === 0 ? (
+        <Card className="shadow-card">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Fish className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhum registro encontrado</h3>
             <p className="text-muted-foreground mb-4">
-              Nenhuma alimentação registrada ainda.
+              Comece criando o primeiro registro de coleta de dados
             </p>
-            <Button onClick={() => setIsDialogOpen(true)} className="bg-primary hover:bg-primary/90">
-              Registrar primeira alimentação
+            <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Criar Primeiro Registro
             </Button>
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {records.map((record) => (
+            <Card key={record.id} className="shadow-card hover:shadow-elegant transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg font-semibold">{record.pond_name}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {format(new Date(record.date), "dd/MM/yyyy", { locale: pt })}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 ml-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleEdit(record)}
+                      className="h-8 w-8"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDelete(record.id)}
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Ração:</span>
+                  <span className="font-semibold text-primary">{record.feed_quantity} kg</span>
+                </div>
+                
+                {record.mortality !== null && record.mortality > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Mortalidade:</span>
+                    <span className="font-semibold text-destructive">{record.mortality}</span>
+                  </div>
+                )}
+
+                {record.water_quality && (
+                  <div className="mt-3 p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">Qualidade da Água:</p>
+                    <p className="text-sm">{record.water_quality}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

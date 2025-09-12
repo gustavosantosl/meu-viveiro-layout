@@ -16,28 +16,46 @@ export type Database = {
     Tables: {
       feedings: {
         Row: {
+          date: string | null
           fed_at: string | null
+          feed_quantity: number | null
           feed_type: string | null
           id: string
+          mortality: number | null
           pond_id: string | null
+          pond_name: string | null
           quantity: number | null
-          user_id: string | null
+          updated_at: string | null
+          user_id: string
+          water_quality: string | null
         }
         Insert: {
+          date?: string | null
           fed_at?: string | null
+          feed_quantity?: number | null
           feed_type?: string | null
           id?: string
+          mortality?: number | null
           pond_id?: string | null
+          pond_name?: string | null
           quantity?: number | null
-          user_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          water_quality?: string | null
         }
         Update: {
+          date?: string | null
           fed_at?: string | null
+          feed_quantity?: number | null
           feed_type?: string | null
           id?: string
+          mortality?: number | null
           pond_id?: string | null
+          pond_name?: string | null
           quantity?: number | null
-          user_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          water_quality?: string | null
         }
         Relationships: [
           {
