@@ -56,6 +56,39 @@ export type Database = {
           },
         ]
       }
+      inventory: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          quantity: number | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          quantity?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ponds: {
         Row: {
           created_at: string | null
