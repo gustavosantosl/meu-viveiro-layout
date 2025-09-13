@@ -7,16 +7,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit2, Trash2, CalendarIcon, Fish } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { usePonds } from "@/hooks/usePonds";
+import { useFarms } from "@/hooks/useFarms";
+
+interface PondWithFarm {
+  id: string;
+  name: string;
+  farm_id: string;
+  farm_name: string;
+}
 
 interface FeedingRecord {
   id: string;
-  pond_name: string;
+  pond_id: string;
   date: string;
   feed_quantity: number;
   water_quality?: string;
@@ -25,9 +35,14 @@ interface FeedingRecord {
   updated_at?: string;
   fed_at?: string;
   feed_type?: string;
-  pond_id?: string;
   quantity?: number;
   user_id?: string;
+  pond?: {
+    name: string;
+    farm?: {
+      name: string;
+    };
+  };
 }
 
 const ColetaDados = () => {
@@ -36,23 +51,55 @@ const ColetaDados = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingRecord, setEditingRecord] = useState<FeedingRecord | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [pondsWithFarms, setPondsWithFarms] = useState<PondWithFarm[]>([]);
   const [formData, setFormData] = useState({
-    pond_name: "",
+    pond_id: "",
     feed_quantity: "",
     water_quality: "",
     mortality: ""
   });
   const { toast } = useToast();
+  const { data: farms } = useFarms();
+  const { data: ponds } = usePonds();
 
   useEffect(() => {
     fetchRecords();
+    fetchPondsWithFarms();
   }, []);
+  
+  const fetchPondsWithFarms = async () => {
+    if (!ponds || !farms) return;
+    
+    const pondsWithFarmData: PondWithFarm[] = ponds.map(pond => {
+      const farm = farms.find(f => f.id === pond.farm_id);
+      return {
+        id: pond.id,
+        name: pond.name,
+        farm_id: pond.farm_id || '',
+        farm_name: farm?.name || 'Fazenda não encontrada'
+      };
+    });
+    
+    setPondsWithFarms(pondsWithFarmData);
+  };
+  
+  useEffect(() => {
+    fetchPondsWithFarms();
+  }, [ponds, farms]);
 
   const fetchRecords = async () => {
     const { data, error } = await supabase
       .from('feedings')
-      .select('*')
-      .not('pond_name', 'is', null)
+      .select(`
+        *,
+        pond:ponds (
+          name,
+          farm:shrimp_farms (
+            name
+          )
+        )
+      `)
+      .not('pond_id', 'is', null)
       .not('date', 'is', null)
       .not('feed_quantity', 'is', null)
       .order('date', { ascending: false });
@@ -71,10 +118,10 @@ const ColetaDados = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.pond_name || !selectedDate || !formData.feed_quantity) {
+    if (!formData.pond_id || !selectedDate || !formData.feed_quantity) {
       toast({
         title: "Erro",
-        description: "Campos obrigatórios: Nome do Viveiro, Data e Quantidade de Ração",
+        description: "Campos obrigatórios: Viveiro, Data e Quantidade de Ração",
         variant: "destructive"
       });
       return;
@@ -113,7 +160,7 @@ const ColetaDados = () => {
 
     try {
       const recordData = {
-        pond_name: formData.pond_name,
+        pond_id: formData.pond_id,
         date: format(selectedDate, 'yyyy-MM-dd'),
         feed_quantity: parseFloat(formData.feed_quantity),
         water_quality: formData.water_quality || null,
@@ -174,7 +221,7 @@ const ColetaDados = () => {
     setIsEditMode(true);
     setEditingRecord(record);
     setFormData({
-      pond_name: record.pond_name,
+      pond_id: record.pond_id,
       feed_quantity: record.feed_quantity.toString(),
       water_quality: record.water_quality || "",
       mortality: record.mortality?.toString() || ""
@@ -209,7 +256,7 @@ const ColetaDados = () => {
   };
 
   const resetForm = () => {
-    setFormData({ pond_name: "", feed_quantity: "", water_quality: "", mortality: "" });
+    setFormData({ pond_id: "", feed_quantity: "", water_quality: "", mortality: "" });
     setSelectedDate(undefined);
     setIsModalOpen(false);
     setIsEditMode(false);
@@ -239,14 +286,19 @@ const ColetaDados = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="pond_name">Nome do Viveiro *</Label>
-                <Input
-                  id="pond_name"
-                  value={formData.pond_name}
-                  onChange={(e) => setFormData({ ...formData, pond_name: e.target.value })}
-                  placeholder="Digite o nome do viveiro"
-                  required
-                />
+                <Label htmlFor="pond_id">Viveiro *</Label>
+                <Select value={formData.pond_id} onValueChange={(value) => setFormData({ ...formData, pond_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um viveiro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pondsWithFarms.map((pond) => (
+                      <SelectItem key={pond.id} value={pond.id}>
+                        {pond.name} - {pond.farm_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -352,8 +404,11 @@ const ColetaDados = () => {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <CardTitle className="text-lg font-semibold">{record.pond_name}</CardTitle>
+                    <CardTitle className="text-lg font-semibold">{record.pond?.name}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
+                      Fazenda: {record.pond?.farm?.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
                       {format(new Date(record.date), "dd/MM/yyyy", { locale: pt })}
                     </p>
                   </div>
