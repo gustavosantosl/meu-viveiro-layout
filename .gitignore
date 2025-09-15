@@ -22,6 +22,9 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 
+# Supabase
+/.supabase/
+
 # Vercel
 .vercel/
 
