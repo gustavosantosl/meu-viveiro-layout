@@ -115,6 +115,45 @@ export type Database = {
           },
         ]
       }
+      funcionarios: {
+        Row: {
+          contato: string | null
+          created_at: string
+          data_admissao: string
+          funcao_cargo: string
+          id: string
+          nome_completo: string
+          observacoes: string | null
+          salario_mensal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contato?: string | null
+          created_at?: string
+          data_admissao: string
+          funcao_cargo: string
+          id?: string
+          nome_completo: string
+          observacoes?: string | null
+          salario_mensal: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contato?: string | null
+          created_at?: string
+          data_admissao?: string
+          funcao_cargo?: string
+          id?: string
+          nome_completo?: string
+          observacoes?: string | null
+          salario_mensal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           category: string | null
