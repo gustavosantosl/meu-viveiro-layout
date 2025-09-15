@@ -19,7 +19,7 @@ const Relatorios = () => {
 
   // Filtrar registros baseado na categoria
   const filteredRecords = useMemo(() => {
-    if (!categoriaFilter) return records;
+    if (!categoriaFilter || categoriaFilter === 'todas') return records;
     return records.filter(record => record.categoria === categoriaFilter);
   }, [records, categoriaFilter]);
 
@@ -161,7 +161,7 @@ const Relatorios = () => {
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="todas">Todas as categorias</SelectItem>
                 {categorias.map(categoria => (
                   <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                 ))}
