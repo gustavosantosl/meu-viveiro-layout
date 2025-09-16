@@ -8,6 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Activity, Droplets, Fish, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { CycleDetailsDialog } from "@/components/pond/CycleDetailsDialog";
+import { getAlertBadgeColor } from "@/utils/exportUtils";
 
 const StatusIcon = ({ status }: { status: 'normal' | 'atenção' | 'crítico' }) => {
   switch (status) {
