@@ -15,6 +15,7 @@ import ColetaDados from "./pages/ColetaDados";
 import Financeiro from "./pages/Financeiro";
 import Funcionarios from "./pages/Funcionarios";
 import Relatorios from "./pages/Relatorios";
+import Tarefas from "./pages/Tarefas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Relatorios />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/tarefas" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Tarefas />
                 </Layout>
               </ProtectedRoute>
             } />

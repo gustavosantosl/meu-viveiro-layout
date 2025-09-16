@@ -103,7 +103,9 @@ export type Database = {
           created_at: string
           cycle_id: string
           data_alimentacao: string
+          fornecedor: string | null
           id: string
+          lote_racao: string | null
           mortalidade_observada: number | null
           observacoes: string | null
           quantidade_racao: number
@@ -114,7 +116,9 @@ export type Database = {
           created_at?: string
           cycle_id: string
           data_alimentacao: string
+          fornecedor?: string | null
           id?: string
+          lote_racao?: string | null
           mortalidade_observada?: number | null
           observacoes?: string | null
           quantidade_racao: number
@@ -125,7 +129,9 @@ export type Database = {
           created_at?: string
           cycle_id?: string
           data_alimentacao?: string
+          fornecedor?: string | null
           id?: string
+          lote_racao?: string | null
           mortalidade_observada?: number | null
           observacoes?: string | null
           quantidade_racao?: number
@@ -274,6 +280,47 @@ export type Database = {
         }
         Relationships: []
       }
+      health_records: {
+        Row: {
+          ciclo_id: string
+          created_at: string
+          data: string
+          diagnostico: string | null
+          id: string
+          sintomas: string | null
+          tratamento: string | null
+          user_id: string
+        }
+        Insert: {
+          ciclo_id: string
+          created_at?: string
+          data: string
+          diagnostico?: string | null
+          id?: string
+          sintomas?: string | null
+          tratamento?: string | null
+          user_id: string
+        }
+        Update: {
+          ciclo_id?: string
+          created_at?: string
+          data?: string
+          diagnostico?: string | null
+          id?: string
+          sintomas?: string | null
+          tratamento?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_records_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "cultivation_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory: {
         Row: {
           category: string | null
@@ -398,6 +445,60 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          ciclo_id: string | null
+          created_at: string
+          data_limite: string | null
+          descricao: string | null
+          id: string
+          responsavel_id: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ciclo_id?: string | null
+          created_at?: string
+          data_limite?: string | null
+          descricao?: string | null
+          id?: string
+          responsavel_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ciclo_id?: string | null
+          created_at?: string
+          data_limite?: string | null
+          descricao?: string | null
+          id?: string
+          responsavel_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "cultivation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
             referencedColumns: ["id"]
           },
         ]

@@ -55,6 +55,8 @@ export interface DailyFeeding {
   tipo_racao: string | null;
   mortalidade_observada: number;
   observacoes: string | null;
+  lote_racao: string | null;
+  fornecedor: string | null;
   created_at: string;
 }
 

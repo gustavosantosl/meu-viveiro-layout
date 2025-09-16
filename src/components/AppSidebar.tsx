@@ -6,6 +6,7 @@ import {
   DollarSign,
   Users,
   FileText,
+  CheckSquare,
 } from "lucide-react";
 import { ShrimpIcon } from "@/components/icons/ShrimpIcon";
 
@@ -28,6 +29,7 @@ const items = [
   { title: "Coleta de Dados", url: "/coleta-dados", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Funcionários", url: "/funcionarios", icon: Users },
+  { title: "Tarefas", url: "/tarefas", icon: CheckSquare },
   { title: "Relatórios", url: "/relatorios", icon: FileText },
 ];
 

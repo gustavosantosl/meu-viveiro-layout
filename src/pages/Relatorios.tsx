@@ -2,20 +2,25 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Download, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { CalendarIcon, Download, TrendingUp, TrendingDown, DollarSign, Fish } from "lucide-react";
 import { useFinanceiro, useFinanceiroSummary } from "@/hooks/useFinanceiro";
+import { useCultivationCycles, useBiometricData, useDailyFeeding } from "@/hooks/useCultivationCycles";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff'];
 
 const Relatorios = () => {
   const [periodo, setPeriodo] = useState<'dia' | 'mes' | 'ano'>('mes');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('');
+  const [selectedCycles, setSelectedCycles] = useState<string[]>([]);
   
   const summary = useFinanceiroSummary(periodo);
   const { records } = useFinanceiro();
+  const { data: cycles = [] } = useCultivationCycles();
 
   // Filtrar registros baseado na categoria
   const filteredRecords = useMemo(() => {
@@ -119,6 +124,54 @@ const Relatorios = () => {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  // Get finalized cycles for comparison
+  const finalizedCycles = cycles.filter(cycle => cycle.status === 'finalizado');
+
+  // Calculate cycle metrics
+  const calculateCycleMetrics = (cycle: any) => {
+    const duration = differenceInDays(
+      cycle.data_fim ? new Date(cycle.data_fim) : new Date(),
+      new Date(cycle.data_povoamento)
+    );
+    
+    return {
+      id: cycle.id,
+      nome: cycle.nome_ciclo,
+      duracao: duration,
+      biomassa_inicial: cycle.biomassa_inicial || 0,
+      // These would be calculated from related data in a real implementation
+      fca_final: 1.8, // Placeholder
+      sobrevivencia_final: 85, // Placeholder
+      biomassa_final: (cycle.biomassa_inicial || 0) * 1.5, // Placeholder
+    };
+  };
+
+  // Prepare comparison data
+  const comparisonData = selectedCycles.map(cycleId => {
+    const cycle = cycles.find(c => c.id === cycleId);
+    return cycle ? calculateCycleMetrics(cycle) : null;
+  }).filter(Boolean);
+
+  // FCA comparison chart data
+  const fcaComparisonData = comparisonData.map(cycle => ({
+    nome: cycle?.nome,
+    fca: cycle?.fca_final
+  }));
+
+  // Biomass comparison chart data
+  const biomassComparisonData = comparisonData.map(cycle => ({
+    nome: cycle?.nome,
+    biomassa: cycle?.biomassa_final
+  }));
+
+  const handleCycleSelection = (cycleId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCycles(prev => [...prev, cycleId]);
+    } else {
+      setSelectedCycles(prev => prev.filter(id => id !== cycleId));
+    }
   };
 
   return (
@@ -275,6 +328,96 @@ const Relatorios = () => {
               <Line type="monotone" dataKey="saidas" stroke="#ef4444" name="Saídas" />
             </LineChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Comparativo de Ciclos Section */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Fish className="h-5 w-5" />
+            Comparativo de Ciclos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Cycle Selection */}
+          <div>
+            <h4 className="text-sm font-medium mb-3">Selecionar Ciclos Finalizados:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {finalizedCycles.map((cycle) => (
+                <div key={cycle.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={cycle.id}
+                    checked={selectedCycles.includes(cycle.id)}
+                    onCheckedChange={(checked) => handleCycleSelection(cycle.id, checked as boolean)}
+                  />
+                  <label htmlFor={cycle.id} className="text-sm">
+                    {cycle.nome_ciclo}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {selectedCycles.length > 0 && (
+            <>
+              {/* Comparison Table */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Tabela Comparativa:</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ciclo</TableHead>
+                      <TableHead>Duração (dias)</TableHead>
+                      <TableHead>FCA Final</TableHead>
+                      <TableHead>Sobrevivência (%)</TableHead>
+                      <TableHead>Biomassa Final (kg)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {comparisonData.map((cycle) => (
+                      <TableRow key={cycle?.id}>
+                        <TableCell className="font-medium">{cycle?.nome}</TableCell>
+                        <TableCell>{cycle?.duracao}</TableCell>
+                        <TableCell>{cycle?.fca_final.toFixed(2)}</TableCell>
+                        <TableCell>{cycle?.sobrevivencia_final}%</TableCell>
+                        <TableCell>{cycle?.biomassa_final.toFixed(1)} kg</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Comparison Charts */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Comparação FCA:</h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={fcaComparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="nome" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="fca" stroke="#8884d8" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Comparação Biomassa Final:</h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={biomassComparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="nome" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="biomassa" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

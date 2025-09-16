@@ -138,6 +138,8 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
       tipo_racao: feedingForm.tipo_racao || null,
       mortalidade_observada: Number(feedingForm.mortalidade_observada) || 0,
       observacoes: feedingForm.observacoes || null,
+      lote_racao: null,
+      fornecedor: null,
     });
 
     setFeedingForm({
