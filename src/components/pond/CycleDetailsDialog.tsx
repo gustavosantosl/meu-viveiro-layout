@@ -6,9 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Fish, Waves, Utensils } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon, Fish, Waves, Utensils, AlertTriangle, Download } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { AlertsTab } from '@/components/alerts/AlertsTab';
+import { HarvestDialog } from '@/components/harvest/HarvestDialog';
+import { getAlertBadgeColor } from '@/utils/exportUtils';
 import {
   CultivationCycle,
   useBiometricData,
@@ -17,6 +21,7 @@ import {
   useCreateWaterQuality,
   useDailyFeeding,
   useCreateDailyFeeding,
+  useFinalizarCiclo,
 } from '@/hooks/useCultivationCycles';
 import { useHealthRecords, useCreateHealthRecord } from '@/hooks/useHealthRecords';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -28,6 +33,7 @@ interface CycleDetailsDialogProps {
 }
 
 export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDialogProps) => {
+  const [harvestDialogOpen, setHarvestDialogOpen] = useState(false);
   const [biometricForm, setBiometricForm] = useState({
     data_coleta: format(new Date(), 'yyyy-MM-dd'),
     peso_medio_amostra: '',
@@ -74,6 +80,7 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
   const createWaterQuality = useCreateWaterQuality();
   const createDailyFeeding = useCreateDailyFeeding();
   const createHealthRecord = useCreateHealthRecord();
+  const finalizarCiclo = useFinalizarCiclo();
 
   if (!cycle) return null;
 
@@ -193,15 +200,39 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
     pesoHistorico: 5 + (index * 2), // Dados simulados - substituir por dados reais
   }));
 
+  const alertBadgeVariant = getAlertBadgeColor(waterQuality || [], dailyFeeding || []);
+
+  const handleFinalizeCycle = (harvestData: any) => {
+    finalizarCiclo.mutate(harvestData);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Fish className="h-5 w-5" />
-            {cycle.nome_ciclo}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <Fish className="h-5 w-5" />
+                  {cycle.nome_ciclo}
+                  <Badge variant={alertBadgeVariant}>
+                    {alertBadgeVariant === 'destructive' ? 'Crítico' : 
+                     alertBadgeVariant === 'secondary' ? 'Atenção' : 'Normal'}
+                  </Badge>
+                </DialogTitle>
+              </div>
+              {cycle.status === 'ativo' && (
+                <Button 
+                  onClick={() => setHarvestDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Finalizar Ciclo
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
 
         {/* Indicadores principais */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -248,14 +279,18 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
           </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="biometrics">Biometria</TabsTrigger>
-            <TabsTrigger value="water">Qualidade Água</TabsTrigger>
-            <TabsTrigger value="feeding">Alimentação</TabsTrigger>
-            <TabsTrigger value="health">Saúde</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+              <TabsTrigger value="biometrics">Biometria</TabsTrigger>
+              <TabsTrigger value="water">Qualidade Água</TabsTrigger>
+              <TabsTrigger value="feeding">Alimentação</TabsTrigger>
+              <TabsTrigger value="health">Saúde</TabsTrigger>
+              <TabsTrigger value="alerts">
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Alertas
+              </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
             <Card>
@@ -727,8 +762,23 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="alerts">
+            <AlertsTab 
+              waterQuality={waterQuality || []}
+              dailyFeeding={dailyFeeding || []}
+            />
+          </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <HarvestDialog
+        open={harvestDialogOpen}
+        onOpenChange={setHarvestDialogOpen}
+        cycle={cycle}
+        onFinalize={handleFinalizeCycle}
+      />
+    </>
   );
 };

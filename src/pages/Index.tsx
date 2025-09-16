@@ -141,8 +141,11 @@ const CycleCard = ({ cycle }: { cycle: any }) => {
             </div>
           )}
 
-          <Badge variant={status === 'normal' ? 'default' : status === 'atenção' ? 'secondary' : 'destructive'}>
-            {status === 'normal' ? 'Normal' : status === 'atenção' ? 'Atenção' : 'Crítico'}
+          <Badge variant={getAlertBadgeColor(waterQuality ? [waterQuality[0]] : [], feedingData)}>
+            {(() => {
+              const variant = getAlertBadgeColor(waterQuality ? [waterQuality[0]] : [], feedingData);
+              return variant === 'destructive' ? 'Crítico' : variant === 'secondary' ? 'Atenção' : 'Normal';
+            })()}
           </Badge>
         </CardContent>
       </Card>

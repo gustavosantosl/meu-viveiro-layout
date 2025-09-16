@@ -14,6 +14,12 @@ export interface CultivationCycle {
   data_fim: string | null;
   status: 'ativo' | 'finalizado';
   observacoes: string | null;
+  data_despesca: string | null;
+  peso_final_despesca: number | null;
+  preco_venda_kg: number | null;
+  receita_total: number | null;
+  fca_final: number | null;
+  sobrevivencia_final: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -245,6 +251,85 @@ export const useCreateDailyFeeding = () => {
       toast({
         title: "Alimentação registrada",
         description: "Dados de alimentação registrados com sucesso!",
+      });
+    },
+  });
+};
+
+export const useFinalizarCiclo = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (params: {
+      cycleId: string;
+      data_despesca: string;
+      peso_final_despesca: number;
+      preco_venda_kg: number;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Get current cycle data
+      const { data: cycle, error: cycleError } = await supabase
+        .from('cultivation_cycles')
+        .select('*')
+        .eq('id', params.cycleId)
+        .single();
+
+      if (cycleError) throw cycleError;
+
+      // Get total feeding for FCA calculation
+      const { data: feedings, error: feedingError } = await supabase
+        .from('daily_feeding')
+        .select('quantidade_racao')
+        .eq('cycle_id', params.cycleId);
+
+      if (feedingError) throw feedingError;
+
+      const totalRacao = feedings?.reduce((sum, feed) => sum + (feed.quantidade_racao || 0), 0) || 0;
+      const pesoInicial = cycle.peso_inicial_total || 0;
+      const pesoGanho = params.peso_final_despesca - pesoInicial;
+      const fcaFinal = pesoGanho > 0 ? totalRacao / pesoGanho : 0;
+      
+      // Calculate survival rate (approximation)
+      const sobrevivenciaFinal = cycle.biomassa_inicial 
+        ? Math.min((params.peso_final_despesca / cycle.biomassa_inicial) * 100, 100)
+        : 85; // Default approximation
+
+      const receitaTotal = params.peso_final_despesca * params.preco_venda_kg;
+
+      const { data, error } = await supabase
+        .from('cultivation_cycles')
+        .update({
+          data_despesca: params.data_despesca,
+          peso_final_despesca: params.peso_final_despesca,
+          preco_venda_kg: params.preco_venda_kg,
+          receita_total: receitaTotal,
+          fca_final: fcaFinal,
+          sobrevivencia_final: sobrevivenciaFinal,
+          status: 'finalizado',
+          data_fim: new Date().toISOString(),
+        })
+        .eq('id', params.cycleId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cultivation-cycles'] });
+      toast({
+        title: "Ciclo finalizado",
+        description: "Ciclo de cultivo finalizado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao finalizar ciclo: " + error.message,
+        variant: "destructive",
       });
     },
   });

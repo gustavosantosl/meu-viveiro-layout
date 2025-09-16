@@ -54,14 +54,20 @@ export type Database = {
         Row: {
           biomassa_inicial: number | null
           created_at: string
+          data_despesca: string | null
           data_fim: string | null
           data_inicio: string
           data_povoamento: string
+          fca_final: number | null
           id: string
           nome_ciclo: string
           observacoes: string | null
+          peso_final_despesca: number | null
           peso_inicial_total: number | null
           pond_id: string
+          preco_venda_kg: number | null
+          receita_total: number | null
+          sobrevivencia_final: number | null
           status: string
           updated_at: string
           user_id: string
@@ -69,14 +75,20 @@ export type Database = {
         Insert: {
           biomassa_inicial?: number | null
           created_at?: string
+          data_despesca?: string | null
           data_fim?: string | null
           data_inicio?: string
           data_povoamento: string
+          fca_final?: number | null
           id?: string
           nome_ciclo: string
           observacoes?: string | null
+          peso_final_despesca?: number | null
           peso_inicial_total?: number | null
           pond_id: string
+          preco_venda_kg?: number | null
+          receita_total?: number | null
+          sobrevivencia_final?: number | null
           status?: string
           updated_at?: string
           user_id: string
@@ -84,14 +96,20 @@ export type Database = {
         Update: {
           biomassa_inicial?: number | null
           created_at?: string
+          data_despesca?: string | null
           data_fim?: string | null
           data_inicio?: string
           data_povoamento?: string
+          fca_final?: number | null
           id?: string
           nome_ciclo?: string
           observacoes?: string | null
+          peso_final_despesca?: number | null
           peso_inicial_total?: number | null
           pond_id?: string
+          preco_venda_kg?: number | null
+          receita_total?: number | null
+          sobrevivencia_final?: number | null
           status?: string
           updated_at?: string
           user_id?: string

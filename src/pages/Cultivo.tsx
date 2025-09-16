@@ -47,6 +47,12 @@ const Cultivo = () => {
       data_fim: null,
       status: 'ativo' as const,
       observacoes: formData.observacoes || null,
+      data_despesca: null,
+      peso_final_despesca: null,
+      preco_venda_kg: null,
+      receita_total: null,
+      fca_final: null,
+      sobrevivencia_final: null,
     };
 
     createCycle.mutate(cycleData);
