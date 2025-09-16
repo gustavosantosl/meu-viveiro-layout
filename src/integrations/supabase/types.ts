@@ -14,6 +14,126 @@ export type Database = {
   }
   public: {
     Tables: {
+      biometrics: {
+        Row: {
+          biomassa_estimada: number | null
+          created_at: string
+          cycle_id: string
+          data_coleta: string
+          id: string
+          observacoes: string | null
+          peso_medio_amostra: number
+          quantidade_amostra: number | null
+          user_id: string
+        }
+        Insert: {
+          biomassa_estimada?: number | null
+          created_at?: string
+          cycle_id: string
+          data_coleta: string
+          id?: string
+          observacoes?: string | null
+          peso_medio_amostra: number
+          quantidade_amostra?: number | null
+          user_id: string
+        }
+        Update: {
+          biomassa_estimada?: number | null
+          created_at?: string
+          cycle_id?: string
+          data_coleta?: string
+          id?: string
+          observacoes?: string | null
+          peso_medio_amostra?: number
+          quantidade_amostra?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cultivation_cycles: {
+        Row: {
+          biomassa_inicial: number | null
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          data_povoamento: string
+          id: string
+          nome_ciclo: string
+          observacoes: string | null
+          peso_inicial_total: number | null
+          pond_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          biomassa_inicial?: number | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          data_povoamento: string
+          id?: string
+          nome_ciclo: string
+          observacoes?: string | null
+          peso_inicial_total?: number | null
+          pond_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          biomassa_inicial?: number | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          data_povoamento?: string
+          id?: string
+          nome_ciclo?: string
+          observacoes?: string | null
+          peso_inicial_total?: number | null
+          pond_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_feeding: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          data_alimentacao: string
+          id: string
+          mortalidade_observada: number | null
+          observacoes: string | null
+          quantidade_racao: number
+          tipo_racao: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          data_alimentacao: string
+          id?: string
+          mortalidade_observada?: number | null
+          observacoes?: string | null
+          quantidade_racao: number
+          tipo_racao?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          data_alimentacao?: string
+          id?: string
+          mortalidade_observada?: number | null
+          observacoes?: string | null
+          quantidade_racao?: number
+          tipo_racao?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedings: {
         Row: {
           date: string | null
@@ -281,6 +401,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      water_quality: {
+        Row: {
+          alcalinidade: number | null
+          cor_agua: string | null
+          created_at: string
+          cycle_id: string
+          data_coleta: string
+          id: string
+          observacoes: string | null
+          oxigenio_dissolvido: number | null
+          ph: number | null
+          salinidade: number | null
+          temperatura: number | null
+          turbidez: number | null
+          user_id: string
+        }
+        Insert: {
+          alcalinidade?: number | null
+          cor_agua?: string | null
+          created_at?: string
+          cycle_id: string
+          data_coleta?: string
+          id?: string
+          observacoes?: string | null
+          oxigenio_dissolvido?: number | null
+          ph?: number | null
+          salinidade?: number | null
+          temperatura?: number | null
+          turbidez?: number | null
+          user_id: string
+        }
+        Update: {
+          alcalinidade?: number | null
+          cor_agua?: string | null
+          created_at?: string
+          cycle_id?: string
+          data_coleta?: string
+          id?: string
+          observacoes?: string | null
+          oxigenio_dissolvido?: number | null
+          ph?: number | null
+          salinidade?: number | null
+          temperatura?: number | null
+          turbidez?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
