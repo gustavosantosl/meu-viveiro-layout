@@ -59,23 +59,27 @@ const calculateFCA = (feedingData: any[], biometrics: any[]) => {
   return '0.00';
 };
 const getAlertBadgeVariant = (waterQuality: any[], dailyFeeding: any[]) => {
-  const hasCriticalOxygen = waterQuality.some(
-    (wq) => wq.oxigenio_dissolvido && wq.oxigenio_dissolvido < 3
+  const waterArray = (waterQuality || []).filter(Boolean);
+  const feedingArray = (dailyFeeding || []).filter(Boolean);
+
+  const hasCriticalOxygen = waterArray.some(
+    (wq) => typeof wq?.oxigenio_dissolvido !== 'undefined' && Number(wq?.oxigenio_dissolvido) < 3
   );
+
   const avgMortalidade =
-    dailyFeeding.length > 0
-      ? dailyFeeding.reduce(
-          (sum, feed) => sum + (feed.mortalidade_observada || 0),
+    feedingArray.length > 0
+      ? feedingArray.reduce(
+          (sum: number, feed: any) => sum + Number(feed?.mortalidade_observada || 0),
           0
-        ) / dailyFeeding.length
+        ) / feedingArray.length
       : 0;
 
   if (hasCriticalOxygen || avgMortalidade > 5) {
     return "destructive"; // Vermelho
   }
 
-  const hasWarningPH = waterQuality.some(
-    (wq) => wq.ph && (wq.ph < 6.5 || wq.ph > 9.0)
+  const hasWarningPH = waterArray.some(
+    (wq) => typeof wq?.ph !== 'undefined' && (Number(wq?.ph) < 6.5 || Number(wq?.ph) > 9.0)
   );
 
   if (hasWarningPH) {
@@ -168,9 +172,9 @@ const CycleCard = ({ cycle }: { cycle: any }) => {
             </div>
           )}
 
-          <Badge variant={getAlertBadgeVariant(waterQuality ? [waterQuality[0]] : [], feedingData)}>
+          <Badge variant={getAlertBadgeVariant(waterQuality, feedingData)}>
             {(() => {
-              const variant = getAlertBadgeVariant(waterQuality ? [waterQuality[0]] : [], feedingData);
+              const variant = getAlertBadgeVariant(waterQuality, feedingData);
               return variant === 'destructive' ? 'Crítico' : variant === 'secondary' ? 'Atenção' : 'Normal';
             })()}
           </Badge>
