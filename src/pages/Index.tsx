@@ -58,6 +58,32 @@ const calculateFCA = (feedingData: any[], biometrics: any[]) => {
   
   return '0.00';
 };
+const getAlertBadgeVariant = (waterQuality: any[], dailyFeeding: any[]) => {
+  const hasCriticalOxygen = waterQuality.some(
+    (wq) => wq.oxigenio_dissolvido && wq.oxigenio_dissolvido < 3
+  );
+  const avgMortalidade =
+    dailyFeeding.length > 0
+      ? dailyFeeding.reduce(
+          (sum, feed) => sum + (feed.mortalidade_observada || 0),
+          0
+        ) / dailyFeeding.length
+      : 0;
+
+  if (hasCriticalOxygen || avgMortalidade > 5) {
+    return "destructive"; // Vermelho
+  }
+
+  const hasWarningPH = waterQuality.some(
+    (wq) => wq.ph && (wq.ph < 6.5 || wq.ph > 9.0)
+  );
+
+  if (hasWarningPH) {
+    return "secondary"; // Amarelo
+  }
+
+  return "default"; // Normal
+};
 
 const CycleCard = ({ cycle }: { cycle: any }) => {
   const [selectedCycle, setSelectedCycle] = useState<any>(null);
@@ -142,9 +168,9 @@ const CycleCard = ({ cycle }: { cycle: any }) => {
             </div>
           )}
 
-          <Badge variant={getAlertBadgeColor(waterQuality ? [waterQuality[0]] : [], feedingData)}>
+          <Badge variant={getAlertBadgeVariant(waterQuality ? [waterQuality[0]] : [], feedingData)}>
             {(() => {
-              const variant = getAlertBadgeColor(waterQuality ? [waterQuality[0]] : [], feedingData);
+              const variant = getAlertBadgeVariant(waterQuality ? [waterQuality[0]] : [], feedingData);
               return variant === 'destructive' ? 'Crítico' : variant === 'secondary' ? 'Atenção' : 'Normal';
             })()}
           </Badge>
