@@ -18,6 +18,8 @@ import {
   useDailyFeeding,
   useCreateDailyFeeding,
 } from '@/hooks/useCultivationCycles';
+import { useHealthRecords, useCreateHealthRecord } from '@/hooks/useHealthRecords';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface CycleDetailsDialogProps {
   cycle: CultivationCycle | null;
@@ -52,15 +54,26 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
     tipo_racao: '',
     mortalidade_observada: '',
     observacoes: '',
+    lote_racao: '',
+    fornecedor: '',
+  });
+
+  const [healthForm, setHealthForm] = useState({
+    data: format(new Date(), 'yyyy-MM-dd'),
+    sintomas: '',
+    diagnostico: '',
+    tratamento: '',
   });
 
   const { data: biometrics = [] } = useBiometricData(cycle?.id || '');
   const { data: waterQuality = [] } = useWaterQuality(cycle?.id || '');
   const { data: dailyFeeding = [] } = useDailyFeeding(cycle?.id || '');
+  const { data: healthRecords = [] } = useHealthRecords(cycle?.id || '');
 
   const createBiometric = useCreateBiometric();
   const createWaterQuality = useCreateWaterQuality();
   const createDailyFeeding = useCreateDailyFeeding();
+  const createHealthRecord = useCreateHealthRecord();
 
   if (!cycle) return null;
 
@@ -138,8 +151,8 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
       tipo_racao: feedingForm.tipo_racao || null,
       mortalidade_observada: Number(feedingForm.mortalidade_observada) || 0,
       observacoes: feedingForm.observacoes || null,
-      lote_racao: null,
-      fornecedor: null,
+      lote_racao: feedingForm.lote_racao || null,
+      fornecedor: feedingForm.fornecedor || null,
     });
 
     setFeedingForm({
@@ -148,8 +161,37 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
       tipo_racao: '',
       mortalidade_observada: '',
       observacoes: '',
+      lote_racao: '',
+      fornecedor: '',
     });
   };
+
+  const handleHealthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cycle.id) return;
+
+    createHealthRecord.mutate({
+      ciclo_id: cycle.id,
+      data: healthForm.data,
+      sintomas: healthForm.sintomas || null,
+      diagnostico: healthForm.diagnostico || null,
+      tratamento: healthForm.tratamento || null,
+    });
+
+    setHealthForm({
+      data: format(new Date(), 'yyyy-MM-dd'),
+      sintomas: '',
+      diagnostico: '',
+      tratamento: '',
+    });
+  };
+
+  // Preparar dados para análise preditiva
+  const predictiveData = biometrics.map((bio, index) => ({
+    dia: index * 7, // Assumindo biometrias semanais
+    pesoAtual: bio.peso_medio_amostra,
+    pesoHistorico: 5 + (index * 2), // Dados simulados - substituir por dados reais
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -207,11 +249,12 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="biometrics">Biometria</TabsTrigger>
             <TabsTrigger value="water">Qualidade Água</TabsTrigger>
             <TabsTrigger value="feeding">Alimentação</TabsTrigger>
+            <TabsTrigger value="health">Saúde</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -238,6 +281,43 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
                   {ultimaBiometria.biomassa_estimada && (
                     <p><strong>Biomassa Estimada:</strong> {ultimaBiometria.biomassa_estimada} kg</p>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {predictiveData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Análise Preditiva</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={predictiveData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="dia" label={{ value: 'Dias de Cultivo', position: 'insideBottom', offset: -5 }} />
+                      <YAxis label={{ value: 'Peso Médio (g)', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="pesoAtual" 
+                        stroke="#2563eb" 
+                        strokeWidth={2}
+                        name="Linha atual"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="pesoHistorico" 
+                        stroke="#6b7280" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        name="Linha média histórica"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    A curva azul mostra o crescimento atual comparado à média histórica.
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -513,6 +593,27 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="lote_racao">Lote da Ração</Label>
+                      <Input
+                        id="lote_racao"
+                        value={feedingForm.lote_racao}
+                        onChange={(e) => setFeedingForm({ ...feedingForm, lote_racao: e.target.value })}
+                        placeholder="Ex: L2024001"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fornecedor">Fornecedor</Label>
+                      <Input
+                        id="fornecedor"
+                        value={feedingForm.fornecedor}
+                        onChange={(e) => setFeedingForm({ ...feedingForm, fornecedor: e.target.value })}
+                        placeholder="Ex: Ração SA"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <Label htmlFor="feeding_observacoes">Observações</Label>
                     <Textarea
@@ -540,9 +641,88 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
                       <p><strong>{format(new Date(feed.data_alimentacao), 'dd/MM/yyyy', { locale: ptBR })}</strong></p>
                       <p>Ração: {feed.quantidade_racao}kg</p>
                       {feed.tipo_racao && <p>Tipo: {feed.tipo_racao}</p>}
+                      {feed.lote_racao && <p>Lote: {feed.lote_racao}</p>}
+                      {feed.fornecedor && <p>Fornecedor: {feed.fornecedor}</p>}
                       {feed.mortalidade_observada > 0 && <p>Mortalidade: {feed.mortalidade_observada}</p>}
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="health" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Registrar Ocorrência de Saúde</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleHealthSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="health_data">Data</Label>
+                    <Input
+                      id="health_data"
+                      type="date"
+                      value={healthForm.data}
+                      onChange={(e) => setHealthForm({ ...healthForm, data: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="sintomas">Sintomas Observados</Label>
+                    <Textarea
+                      id="sintomas"
+                      value={healthForm.sintomas}
+                      onChange={(e) => setHealthForm({ ...healthForm, sintomas: e.target.value })}
+                      placeholder="Descreva os sintomas observados..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="diagnostico">Diagnóstico</Label>
+                    <Textarea
+                      id="diagnostico"
+                      value={healthForm.diagnostico}
+                      onChange={(e) => setHealthForm({ ...healthForm, diagnostico: e.target.value })}
+                      placeholder="Diagnóstico ou suspeita..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="tratamento">Tratamento</Label>
+                    <Textarea
+                      id="tratamento"
+                      value={healthForm.tratamento}
+                      onChange={(e) => setHealthForm({ ...healthForm, tratamento: e.target.value })}
+                      placeholder="Tratamento aplicado..."
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={createHealthRecord.isPending}>
+                    {createHealthRecord.isPending ? 'Salvando...' : 'Salvar Registro de Saúde'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Saúde</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {healthRecords.map((record) => (
+                    <div key={record.id} className="border p-3 rounded">
+                      <p><strong>{format(new Date(record.data), 'dd/MM/yyyy', { locale: ptBR })}</strong></p>
+                      {record.sintomas && <p><strong>Sintomas:</strong> {record.sintomas}</p>}
+                      {record.diagnostico && <p><strong>Diagnóstico:</strong> {record.diagnostico}</p>}
+                      {record.tratamento && <p><strong>Tratamento:</strong> {record.tratamento}</p>}
+                    </div>
+                  ))}
+                  {healthRecords.length === 0 && (
+                    <p className="text-muted-foreground">Nenhum registro de saúde encontrado.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
