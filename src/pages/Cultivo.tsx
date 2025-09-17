@@ -5,85 +5,109 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Fish, Calendar, TrendingUp } from "lucide-react";
-import { usePonds, Pond } from "@/hooks/usePonds";
+import { Plus, Edit, Trash2, Eye } from "lucide-react";
+import { usePonds, useCreatePond, useUpdatePond, useDeletePond, Pond } from "@/hooks/usePonds";
 import { useFarms } from "@/hooks/useFarms";
-import { useCultivationCycles, useCreateCultivationCycle, CultivationCycle } from "@/hooks/useCultivationCycles";
-import { CycleDetailsDialog } from "@/components/pond/CycleDetailsDialog";
+import { ViveiroDetalhes } from "@/components/pond/ViveiroDetalhes";
 import { useToast } from "@/hooks/use-toast";
-import { format, differenceInDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 const Cultivo = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedCycle, setSelectedCycle] = useState<CultivationCycle | null>(null);
-  const [isCycleDialogOpen, setIsCycleDialogOpen] = useState(false);
+  const [selectedPond, setSelectedPond] = useState<Pond | null>(null);
+  const [editingPond, setEditingPond] = useState<Pond | null>(null);
   const [formData, setFormData] = useState({
-    nome_ciclo: "",
-    pond_id: "",
-    data_povoamento: format(new Date(), 'yyyy-MM-dd'),
-    biomassa_inicial: "",
-    peso_inicial_total: "",
-    observacoes: "",
+    name: "",
+    size: "",
+    farm_id: "",
   });
 
-  const { data: ponds } = usePonds();
+  const { data: ponds = [] } = usePonds();
   const { data: farms = [] } = useFarms();
-  const { data: cycles = [] } = useCultivationCycles();
-  const createCycle = useCreateCultivationCycle();
+  const createPond = useCreatePond();
+  const updatePond = useUpdatePond();
+  const deletePond = useDeletePond();
   const { toast } = useToast();
+
+  // Group ponds by farm
+  const pondsByFarm = ponds.reduce((acc, pond) => {
+    const farmId = pond.farm_id || 'sem-fazenda';
+    if (!acc[farmId]) {
+      acc[farmId] = [];
+    }
+    acc[farmId].push(pond);
+    return acc;
+  }, {} as Record<string, Pond[]>);
+
+  const getFarmName = (farmId: string) => {
+    if (farmId === 'sem-fazenda') return 'Sem Fazenda';
+    const farm = farms.find(f => f.id === farmId);
+    return farm?.name || 'Fazenda desconhecida';
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const cycleData = {
-      nome_ciclo: formData.nome_ciclo,
-      pond_id: formData.pond_id,
-      data_povoamento: formData.data_povoamento,
-      biomassa_inicial: formData.biomassa_inicial ? Number(formData.biomassa_inicial) : null,
-      peso_inicial_total: formData.peso_inicial_total ? Number(formData.peso_inicial_total) : null,
-      data_inicio: new Date().toISOString(),
-      data_fim: null,
-      status: 'ativo' as const,
-      observacoes: formData.observacoes || null,
-      data_despesca: null,
-      peso_final_despesca: null,
-      preco_venda_kg: null,
-      receita_total: null,
-      fca_final: null,
-      sobrevivencia_final: null,
+    const pondData = {
+      name: formData.name,
+      size: formData.size ? Number(formData.size) : null,
+      farm_id: formData.farm_id || null,
     };
 
-    createCycle.mutate(cycleData);
+    if (editingPond) {
+      updatePond.mutate({ id: editingPond.id, ...pondData });
+    } else {
+      createPond.mutate(pondData);
+    }
+    
+    resetForm();
+  };
+
+  const resetForm = () => {
     setFormData({
-      nome_ciclo: "",
-      pond_id: "",
-      data_povoamento: format(new Date(), 'yyyy-MM-dd'),
-      biomassa_inicial: "",
-      peso_inicial_total: "",
-      observacoes: "",
+      name: "",
+      size: "",
+      farm_id: "",
     });
     setIsDialogOpen(false);
+    setEditingPond(null);
   };
 
-  const handleCycleClick = (cycle: CultivationCycle) => {
-    setSelectedCycle(cycle);
-    setIsCycleDialogOpen(true);
+  const handleEdit = (pond: Pond) => {
+    setEditingPond(pond);
+    setFormData({
+      name: pond.name,
+      size: pond.size?.toString() || "",
+      farm_id: pond.farm_id || "",
+    });
+    setIsDialogOpen(true);
   };
 
-  const getPondName = (pondId: string) => {
-    const pond = ponds?.find(p => p.id === pondId);
-    return pond?.name || 'Tanque desconhecido';
+  const handleDelete = (pond: Pond) => {
+    if (confirm(`Tem certeza que deseja excluir o viveiro "${pond.name}"?`)) {
+      deletePond.mutate(pond.id);
+    }
   };
+
+  const handleViewCycles = (pond: Pond) => {
+    setSelectedPond(pond);
+  };
+
+  const handleBackToPonds = () => {
+    setSelectedPond(null);
+  };
+
+  // If a pond is selected, show its cycles
+  if (selectedPond) {
+    return <ViveiroDetalhes pond={selectedPond} onBack={handleBackToPonds} />;
+  }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Viveiros</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Gestão de Viveiros</h1>
           <p className="text-muted-foreground">
-            Gerencie seus ciclos de cultivo de camarão
+            Crie e gerencie os viveiros da sua fazenda
           </p>
         </div>
         
@@ -91,93 +115,61 @@ const Cultivo = () => {
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Novo Ciclo de Cultivo
+              Novo Viveiro
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Novo Ciclo de Cultivo</DialogTitle>
+              <DialogTitle>{editingPond ? 'Editar Viveiro' : 'Novo Viveiro'}</DialogTitle>
               <DialogDescription>
-                Inicie um novo ciclo de cultivo em um dos seus viveiros
+                {editingPond ? 'Edite as informações do viveiro' : 'Crie um novo viveiro para sua fazenda'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="nome_ciclo">Nome do Ciclo</Label>
+                <Label htmlFor="name">Nome do Viveiro</Label>
                 <Input
-                  id="nome_ciclo"
-                  value={formData.nome_ciclo}
-                  onChange={(e) => setFormData({ ...formData, nome_ciclo: e.target.value })}
-                  placeholder="Ex: Ciclo 1 - Viveiro 1"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: Viveiro 01"
                   required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="size">Tamanho (m²)</Label>
+                <Input
+                  id="size"
+                  type="number"
+                  step="0.1"
+                  value={formData.size}
+                  onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                  placeholder="Ex: 1500"
                 />
               </div>
               
               <div>
-                <Label htmlFor="pond">Viveiro</Label>
-                <Select value={formData.pond_id} onValueChange={(value) => setFormData({ ...formData, pond_id: value })}>
+                <Label htmlFor="farm">Fazenda</Label>
+                <Select value={formData.farm_id} onValueChange={(value) => setFormData({ ...formData, farm_id: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um viveiro" />
+                    <SelectValue placeholder="Selecione uma fazenda" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ponds?.map((pond) => (
-                      <SelectItem key={pond.id} value={pond.id}>
-                        {pond.name}
+                    {farms?.map((farm) => (
+                      <SelectItem key={farm.id} value={farm.id}>
+                        {farm.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="data_povoamento">Data de Povoamento</Label>
-                <Input
-                  id="data_povoamento"
-                  type="date"
-                  value={formData.data_povoamento}
-                  onChange={(e) => setFormData({ ...formData, data_povoamento: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="biomassa_inicial">Biomassa Inicial (kg)</Label>
-                  <Input
-                    id="biomassa_inicial"
-                    type="number"
-                    step="0.1"
-                    value={formData.biomassa_inicial}
-                    onChange={(e) => setFormData({ ...formData, biomassa_inicial: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="peso_inicial_total">Peso Inicial Total (kg)</Label>
-                  <Input
-                    id="peso_inicial_total"
-                    type="number"
-                    step="0.1"
-                    value={formData.peso_inicial_total}
-                    onChange={(e) => setFormData({ ...formData, peso_inicial_total: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                  placeholder="Observações sobre o povoamento..."
-                />
-              </div>
-
               <div className="flex gap-2">
-                <Button type="submit" disabled={createCycle.isPending}>
-                  {createCycle.isPending ? "Criando..." : "Criar Ciclo"}
+                <Button type="submit" disabled={createPond.isPending || updatePond.isPending}>
+                  {(createPond.isPending || updatePond.isPending) ? "Salvando..." : editingPond ? "Atualizar" : "Criar Viveiro"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
               </div>
@@ -186,87 +178,69 @@ const Cultivo = () => {
         </Dialog>
       </div>
 
-      {cycles && cycles.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cycles.map((cycle) => {
-            const diasCultivo = differenceInDays(new Date(), new Date(cycle.data_povoamento));
-            
-            return (
-              <Card 
-                key={cycle.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => handleCycleClick(cycle)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Fish className="h-5 w-5" />
-                      {cycle.nome_ciclo}
-                    </CardTitle>
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      cycle.status === 'ativo' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {cycle.status}
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {getPondName(cycle.pond_id)}
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">{diasCultivo} dias de cultivo</p>
-                        <p className="text-xs text-muted-foreground">
-                          Povoado em {format(new Date(cycle.data_povoamento), 'dd/MM/yyyy', { locale: ptBR })}
-                        </p>
+      {Object.keys(pondsByFarm).length > 0 ? (
+        <div className="space-y-8">
+          {Object.entries(pondsByFarm).map(([farmId, farmPonds]) => (
+            <div key={farmId}>
+              <h2 className="text-xl font-semibold mb-4">{getFarmName(farmId)}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {farmPonds.map((pond) => (
+                  <Card key={pond.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center justify-between">
+                        <span>{pond.name}</span>
+                      </CardTitle>
+                      <CardDescription>
+                        {pond.size ? `${pond.size} m²` : 'Tamanho não informado'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(pond)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(pond)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          onClick={() => handleViewCycles(pond)}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Ver Ciclos
+                        </Button>
                       </div>
-                    </div>
-                    
-                    {cycle.peso_inicial_total && (
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">Peso inicial: {cycle.peso_inicial_total} kg</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button variant="outline" size="sm" className="w-full">
-                      Ver Detalhes
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Nenhum ciclo de cultivo encontrado</CardTitle>
+            <CardTitle>Nenhum viveiro encontrado</CardTitle>
             <CardDescription>
-              Comece criando seu primeiro ciclo de cultivo
+              Comece criando seu primeiro viveiro
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Criar Primeiro Ciclo
+              Criar Primeiro Viveiro
             </Button>
           </CardContent>
         </Card>
       )}
-
-      <CycleDetailsDialog 
-        cycle={selectedCycle}
-        open={isCycleDialogOpen}
-        onOpenChange={setIsCycleDialogOpen}
-      />
     </div>
   );
 };
