@@ -21,7 +21,7 @@ import {
   useCreateWaterQuality,
   useDailyFeeding,
   useCreateDailyFeeding,
-  useFinalizarCiclo,
+  useFinalizeCycle,
 } from '@/hooks/useCultivationCycles';
 import { useHealthRecords, useCreateHealthRecord } from '@/hooks/useHealthRecords';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -80,7 +80,7 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
   const createWaterQuality = useCreateWaterQuality();
   const createDailyFeeding = useCreateDailyFeeding();
   const createHealthRecord = useCreateHealthRecord();
-  const finalizarCiclo = useFinalizarCiclo();
+  const finalizeCycle = useFinalizeCycle();
 
   if (!cycle) return null;
 
@@ -203,7 +203,8 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
   const alertBadgeVariant = getAlertBadgeColor(waterQuality || [], dailyFeeding || []);
 
   const handleFinalizeCycle = (harvestData: any) => {
-    finalizarCiclo.mutate(harvestData);
+    finalizeCycle.mutate(harvestData);
+    setHarvestDialogOpen(false);
   };
 
   return (
@@ -280,17 +281,24 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
         </div>
 
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="biometrics">Biometria</TabsTrigger>
-              <TabsTrigger value="water">Qualidade Água</TabsTrigger>
-              <TabsTrigger value="feeding">Alimentação</TabsTrigger>
-              <TabsTrigger value="health">Saúde</TabsTrigger>
-              <TabsTrigger value="alerts">
-                <AlertTriangle className="h-4 w-4 mr-1" />
-                Alertas
-              </TabsTrigger>
-            </TabsList>
+            {cycle.status === 'ativo' ? (
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="biometrics">Biometria</TabsTrigger>
+                <TabsTrigger value="water">Qualidade Água</TabsTrigger>
+                <TabsTrigger value="feeding">Alimentação</TabsTrigger>
+                <TabsTrigger value="health">Saúde</TabsTrigger>
+                <TabsTrigger value="alerts">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Alertas
+                </TabsTrigger>
+              </TabsList>
+            ) : (
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="harvest-summary">Resumo da Despesca</TabsTrigger>
+              </TabsList>
+            )}
 
           <TabsContent value="overview" className="space-y-4">
             <Card>
@@ -769,14 +777,73 @@ export const CycleDetailsDialog = ({ cycle, open, onOpenChange }: CycleDetailsDi
               dailyFeeding={dailyFeeding || []}
             />
           </TabsContent>
+
+          <TabsContent value="harvest-summary" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumo da Despesca</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Data da Despesca</p>
+                    <p className="font-semibold">
+                      {cycle.data_despesca ? format(new Date(cycle.data_despesca), 'dd/MM/yyyy', { locale: ptBR }) : '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Peso Final</p>
+                    <p className="font-semibold">{cycle.peso_final_despesca ? `${cycle.peso_final_despesca} kg` : '--'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">FCA Final</p>
+                    <p className="font-semibold">{cycle.fca_final ? cycle.fca_final.toFixed(2) : '--'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Preço de Venda</p>
+                    <p className="font-semibold">
+                      {cycle.preco_venda_kg ? `R$ ${cycle.preco_venda_kg.toFixed(2)}/kg` : '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Receita Total</p>
+                    <p className="font-semibold text-green-600">
+                      {cycle.receita_total ? `R$ ${cycle.receita_total.toFixed(2)}` : '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Taxa de Sobrevivência</p>
+                    <p className="font-semibold">
+                      {cycle.sobrevivencia_final ? `${cycle.sobrevivencia_final.toFixed(1)}%` : '--'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t">
+                  <h4 className="font-semibold mb-2">Dados do Ciclo</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <p><strong>Duração:</strong> {diasCultivo} dias</p>
+                    <p><strong>Peso Inicial:</strong> {cycle.peso_inicial_total || '--'} kg</p>
+                    <p><strong>Total de Ração:</strong> {totalRacao.toFixed(1)} kg</p>
+                    <p><strong>Ganho de Peso:</strong> {
+                      cycle.peso_final_despesca && cycle.peso_inicial_total 
+                        ? `${(cycle.peso_final_despesca - cycle.peso_inicial_total).toFixed(1)} kg`
+                        : '--'
+                    }</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
         </DialogContent>
       </Dialog>
 
       <HarvestDialog
-        open={harvestDialogOpen}
-        onOpenChange={setHarvestDialogOpen}
+        isOpen={harvestDialogOpen}
+        onClose={() => setHarvestDialogOpen(false)}
         cycle={cycle}
+        totalFeed={totalRacao}
         onFinalize={handleFinalizeCycle}
       />
     </>
